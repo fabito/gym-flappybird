@@ -13,3 +13,17 @@ There are only 2 possible actions:
 * 1 - Flap
 
 The game is controlled through Pyppeteer (a Puppeteer Python port), which launches instances of the Chromium web browser.
+
+## Playing 
+
+### In the terminal
+
+```commandline
+python -m gym_flappybird.play
+```
+
+### Terminal + browser
+
+```commandline
+python -m gym_flappybird.play --non-headless
+```
