@@ -4,7 +4,7 @@ from pathlib import Path
 from asciimatics.renderers import ColourImageFile, ImageFile
 from asciimatics.screen import Screen
 
-from gym_flappybird import SyncFlappyBird
+from gym_flappybird.envs.flappybird import SyncFlappyBird
 
 
 def main(screen, args):

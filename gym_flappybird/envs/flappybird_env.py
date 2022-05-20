@@ -1,9 +1,7 @@
-import math
 import os
 
-import numpy as np
-
 import gym
+import numpy as np
 from gym import spaces, utils, logger
 from gym.utils import seeding
 
