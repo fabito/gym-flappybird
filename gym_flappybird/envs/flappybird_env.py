@@ -17,7 +17,7 @@ class FlappyBirdEnv(gym.Env, utils.EzPickle):
 
     metadata = {'render.modes': ['human', 'rgb_array']}
 
-    def __init__(self, headless=None, death_reward=-1, stay_alive_reward=0.01, user_data_dir=None):
+    def __init__(self, headless=None, death_reward=-1, stay_alive_reward=0, user_data_dir=None):
         utils.EzPickle.__init__(self, headless, death_reward)
 
         if headless is None:
@@ -40,7 +40,7 @@ class FlappyBirdEnv(gym.Env, utils.EzPickle):
 
         self.observation_space = spaces.Box(low=0, high=255, shape=self.state.snapshot.shape, dtype=np.uint8)
         self.action_space = spaces.Discrete(len(ACTION_NAMES))
-        self.reward_range = -1., 1.
+        self.reward_range = self.death_reward, 1.
 
     @property
     def state(self):
@@ -74,7 +74,7 @@ class FlappyBirdEnv(gym.Env, utils.EzPickle):
     def _score_diff(self):
         return self._state.score - self._old_state.score if self._old_state is not None else 0
 
-    def compute_reward(self, is_over):
+    def __compute_reward(self, is_over):
         if is_over:
             reward = self.death_reward
         else:
@@ -84,6 +84,9 @@ class FlappyBirdEnv(gym.Env, utils.EzPickle):
             else:
                 reward = 1.0
         return reward
+
+    def compute_reward(self, is_over):
+        return self.death_reward if is_over else self.stay_alive_reward
 
     def _get_obs(self):
         return self.state.snapshot
