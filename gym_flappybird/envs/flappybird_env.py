@@ -1,4 +1,5 @@
 import os
+from typing import Dict
 
 import gym
 import numpy as np
@@ -87,11 +88,19 @@ class FlappyBirdEnv(gym.Env, utils.EzPickle):
     def _get_obs(self):
         return self.state.snapshot
 
-    def reset(self):
+    def _get_info(self) -> Dict:
+        return dict(
+            score=self._state.score,
+        )
+
+    def reset(self, seed=None, return_info=False, options=None):
+        super().reset(seed=seed)
         self.game.restart()
         self._update_state()
         self.game.pause()
-        return self._get_obs()
+        observation = self._get_obs()
+        info = self._get_info()
+        return (observation, info) if return_info else observation
 
     def render(self, mode='human', close=False):
         img = self.state.snapshot
@@ -120,4 +129,3 @@ class FlappyBirdEnv(gym.Env, utils.EzPickle):
 
     def __del__(self):
         self.game.stop()
-
