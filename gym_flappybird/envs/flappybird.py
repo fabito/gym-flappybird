@@ -18,11 +18,16 @@ from pyppeteer import launch
 from syncer import sync
 
 GameState = namedtuple('GameState',
-                       ['game_id', 'id', 'score', 'status', 'hiscore', 'snapshot', 'timestamp', 'dimensions'])
+                       ['game_id', 'id', 'score', 'status', 'hiscore', 'snapshot', 'timestamp', 'dimensions', 'bird_y'])
 
 DEFAULT_GAME_URL = 'https://fabito.github.io/flappybird/'
 
-DEFAULT_CHROMIUM_LAUNCH_ARGS = ['--no-sandbox', '--window-size=80,315', '--disable-infobars']
+DEFAULT_CHROMIUM_LAUNCH_ARGS = [
+    '--no-sandbox',
+    '--window-size=80,315',
+    '--disable-infobars',
+    # f'--app={DEFAULT_GAME_URL}'
+]
 
 
 START_SCREEN = 0
@@ -45,9 +50,9 @@ class FlappyBird(object):
 
     async def initialize(self):
         if self.user_data_dir is not None:
-            self.browser = await launch(headless=self.headless, userDataDir=self.user_data_dir, args=DEFAULT_CHROMIUM_LAUNCH_ARGS)
+            self.browser = await launch(headless=self.headless, autoClose=False, userDataDir=self.user_data_dir, args=DEFAULT_CHROMIUM_LAUNCH_ARGS)
         else:
-            self.browser = await launch(headless=self.headless, args=DEFAULT_CHROMIUM_LAUNCH_ARGS)
+            self.browser = await launch(headless=self.headless, autoClose=False, args=DEFAULT_CHROMIUM_LAUNCH_ARGS)
 
         pages = await self.browser.pages()
         if len(pages) > 0:
@@ -137,6 +142,7 @@ class FlappyBird(object):
                 const dimensions = {x, y, width, height};
                 const score = counter.text;
                 const hiscore = counter.text;
+                const bird_y = bird.y;
                 let status = 0;
                 if (!started && !dead) {
                     status = 0;
@@ -149,13 +155,14 @@ class FlappyBird(object):
                 if (includeSnapshot) {
                     snapshot = stage.toDataURL(format, quality);
                 }
-                resolve({score, hiscore, snapshot, status, dimensions});
+                resolve({score, hiscore, snapshot, status, dimensions, bird_y});
             })
         }''', include_snapshot, fmt, quality)
 
         state['hiscore'] = int(state['hiscore'])
         state['score'] = int(state['score'])
         state['status'] = int(state['status'])
+        state['bird_y'] = int(state['bird_y'])
         state['id'] = self.state_id
         state['game_id'] = self.game_id
         state['timestamp'] = dt.datetime.today().timestamp()

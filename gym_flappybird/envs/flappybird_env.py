@@ -1,4 +1,5 @@
 import os
+from distutils.util import strtobool
 from typing import Dict
 
 import gym
@@ -17,7 +18,12 @@ class FlappyBirdEnv(gym.Env, utils.EzPickle):
 
     metadata = {'render.modes': ['human', 'rgb_array']}
 
-    def __init__(self, headless=None, death_reward=-1, stay_alive_reward=0, user_data_dir=None):
+    def __init__(self, headless=None,
+                 death_reward=-1,
+                 stay_alive_reward=1,
+                 out_of_bounds_reward=-0.5,
+                 sleep_mode: bool = True,
+                 user_data_dir=None):
         utils.EzPickle.__init__(self, headless, death_reward)
 
         if headless is None:
@@ -28,6 +34,9 @@ class FlappyBirdEnv(gym.Env, utils.EzPickle):
 
         self.stay_alive_reward = float(os.environ.get('GYM_FB_STAY_ALIVE_REWARD', stay_alive_reward))
         self.death_reward = float(os.environ.get('GYM_FB_DEATH_REWARD', death_reward))
+        self.out_of_bounds_reward = out_of_bounds_reward
+
+        self.sleep_mode = sleep_mode
 
         self._state = None
         self._old_state = None
@@ -55,21 +64,28 @@ class FlappyBirdEnv(gym.Env, utils.EzPickle):
         return self._old_state, self._state
 
     def step(self, a):
-        self.game.resume()
+        if self.sleep_mode:
+            self.game.resume()
+
         if a == ACTION_FLAP:
             self.game.tap()
         self._update_state()
-        self.game.pause()
+
+        if self.sleep_mode:
+            self.game.pause()
 
         is_over = self.state.status == GAME_OVER_SCREEN
+
         reward = self.compute_reward(is_over)
+
         logger.debug('HiScore: {}, Score: {}, Action: {}, Reward: {}, GameOver: {}'.format(
             self.state.hiscore,
             self.state.score,
             ACTION_NAMES[a],
             reward,
             is_over))
-        return self._get_obs(), reward, is_over, dict(score=self.state.score)
+
+        return self._get_obs(), reward, is_over, self._get_info()
 
     def _score_diff(self):
         return self._state.score - self._old_state.score if self._old_state is not None else 0
@@ -86,7 +102,16 @@ class FlappyBirdEnv(gym.Env, utils.EzPickle):
         return reward
 
     def compute_reward(self, is_over):
-        return self.death_reward if is_over else self.stay_alive_reward
+        if is_over:
+            return self.death_reward
+
+        if self._is_out_of_bounds():
+            return self.out_of_bounds_reward
+
+        return self.stay_alive_reward
+
+    def _is_out_of_bounds(self):
+        return self._state.bird_y < 0
 
     def _get_obs(self):
         return self.state.snapshot
@@ -94,13 +119,17 @@ class FlappyBirdEnv(gym.Env, utils.EzPickle):
     def _get_info(self) -> Dict:
         return dict(
             score=self._state.score,
+            bird_y=self._state.bird_y
         )
 
     def reset(self, seed=None, return_info=False, options=None):
-        super().reset(seed=seed)
+        # super().reset(seed=seed)
         self.game.restart()
         self._update_state()
-        self.game.pause()
+
+        if self.sleep_mode:
+            self.game.pause()
+
         observation = self._get_obs()
         info = self._get_info()
         return (observation, info) if return_info else observation
@@ -115,6 +144,8 @@ class FlappyBirdEnv(gym.Env, utils.EzPickle):
                 self.viewer = rendering.SimpleImageViewer()
             self.viewer.imshow(img)
             return self.viewer.isopen
+        else:
+            super(FlappyBirdEnv, self).render(mode=mode)
 
     def close(self):
         if self.viewer is not None:
