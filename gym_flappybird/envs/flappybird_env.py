@@ -24,7 +24,7 @@ class FlappyBirdEnv(gym.Env, utils.EzPickle):
                  out_of_bounds_reward=-0.5,
                  sleep_mode: bool = True,
                  user_data_dir=None):
-        utils.EzPickle.__init__(self, headless, death_reward)
+        utils.EzPickle.__init__(self, headless, death_reward, stay_alive_reward, out_of_bounds_reward, sleep_mode)
 
         if headless is None:
             headless = os.environ.get('GYM_FB_ENV_NON_HEADLESS', None) is None
@@ -93,6 +93,8 @@ class FlappyBirdEnv(gym.Env, utils.EzPickle):
     def __compute_reward(self, is_over):
         if is_over:
             reward = self.death_reward
+        elif self._is_out_of_bounds():
+            reward = self.out_of_bounds_reward
         else:
             diff = self._score_diff()
             if diff == 0.0:
@@ -111,7 +113,9 @@ class FlappyBirdEnv(gym.Env, utils.EzPickle):
         return self.stay_alive_reward
 
     def _is_out_of_bounds(self):
-        return self._state.bird_y < 0
+        upper_limit = 65
+        lower_limit = 830
+        return upper_limit < self._state.bird_y < lower_limit
 
     def _get_obs(self):
         return self.state.snapshot
