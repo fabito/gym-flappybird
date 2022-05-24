@@ -115,7 +115,7 @@ class FlappyBirdEnv(gym.Env, utils.EzPickle):
     def _is_out_of_bounds(self):
         upper_limit = 65
         lower_limit = 830
-        return upper_limit > self._state.bird_y < lower_limit
+        return upper_limit > self._state.bird_y > lower_limit
 
     def _get_obs(self):
         return self.state.snapshot
